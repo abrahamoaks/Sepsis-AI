@@ -36,7 +36,7 @@ export const MissingStaleDataPanel: React.FC<MissingStaleDataPanelProps> = ({
             <FileQuestion className="w-4 h-4 text-amber-600" /> Data Quality, Missing & Stale Observations
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Deterministic data audit. <strong>Missing observations are never assumed to be normal.</strong>
+            Active chart audit. Missing observations are flagged for clinical entry and never assumed to be normal.
           </p>
         </div>
         <button

@@ -41,7 +41,7 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
     {
       role: "assistant",
       content:
-        "**PediaSepsis AI Clinical Assistant** initialized.\n\nI provide transparent, evidence-grounded explanations of triggered safety alerts, documented physiological trends, and active guideline recommendations.\n\n*Safety Notice: I am a clinical decision-support module. I do not provide autonomous medical orders or independent diagnoses. Full clinical authority remains with the treating clinician.*",
+        "**Chempions AI Clinical Assistant** initialized.\n\nI provide transparent, evidence-grounded explanations of triggered safety alerts, documented physiological trends, and active guideline recommendations.\n\n*Safety Notice: I am a clinical decision-support module. I do not provide autonomous medical orders or independent diagnoses. Full clinical authority remains with the treating clinician.*",
       citations: [
         { title: "Surviving Sepsis Campaign 2026 Pediatric Guidelines", version: "2026", section: "Decision Support Principles" }
       ]
@@ -154,11 +154,11 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-bold text-slate-900">Ask PediaSepsis AI</h3>
+              <h3 className="text-sm font-bold text-slate-900">Ask Chempions AI</h3>
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                geminiMode.live ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                geminiMode.live ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700 border border-slate-200"
               }`}>
-                {geminiMode.live ? "Gemini 3.8 Flash (Live)" : "Mock Clinical Reasoner"}
+                {geminiMode.live ? "Gemini 3.8 Flash (Live)" : "Hospital CDS Protocol Model"}
               </span>
             </div>
             <p className="text-[11px] text-slate-500">
@@ -198,7 +198,7 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
             >
               {msg.role === "assistant" && (
                 <div className="flex items-center justify-between pb-1 border-b border-slate-200/60 text-[10px] text-slate-400 uppercase font-mono tracking-wider">
-                  <span>PediaSepsis Reasoner</span>
+                  <span>Chempions AI Reasoner</span>
                   {msg.source && <span className="capitalize text-teal-800">{msg.source.replace(/_/g, " ")}</span>}
                 </div>
               )}

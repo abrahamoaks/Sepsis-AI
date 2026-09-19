@@ -1,6 +1,6 @@
 {
-  "name": "PediaSepsis AI",
-  "description": "A clinician-facing pediatric sepsis real-time decision-support application with deterministic safety rules, physiological trend monitoring, protocol-guided interventions, and Google Gemini clinical explanation.",
+  "name": "Chempions AI",
+  "description": "Chempions AI — Pediatric sepsis clinical decision support system with deterministic safety rules, real-time hemodynamic trend monitoring, protocol-guided interventions, and intelligent clinical reasoning.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

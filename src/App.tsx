@@ -52,7 +52,7 @@ import { TrendMonitorView } from "./components/TrendMonitorView";
 import { MissingStaleDataPanel } from "./components/MissingStaleDataPanel";
 import { EvidenceViewer } from "./components/EvidenceViewer";
 import { AuditTrailView } from "./components/AuditTrailView";
-import { ScenarioSelectorBar } from "./components/ScenarioSelectorBar";
+import { PatientCensusModal } from "./components/PatientCensusModal";
 import { DataEntryModal } from "./components/DataEntryModal";
 import { InterventionsModal } from "./components/InterventionsModal";
 import { GeminiAssistantDrawer } from "./components/GeminiAssistantDrawer";
@@ -70,6 +70,7 @@ export default function App() {
   const [isDataEntryOpen, setIsDataEntryOpen] = useState(false);
   const [isInterventionsOpen, setIsInterventionsOpen] = useState(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [isCensusOpen, setIsCensusOpen] = useState(false);
   const [whyModalData, setWhyModalData] = useState<{
     isOpen: boolean;
     title: string;
@@ -304,8 +305,20 @@ export default function App() {
 
     addAuditEvent(
       "data_modified",
-      `Loaded validation scenario ${scenario.id}: "${scenario.title || scenario.name}". Expected: ${scenario.expectedBehavior || scenario.keySafetyCheck}`
+      `Switched active chart to ${scenario.patientName || scenario.title} (${scenario.bedLocation || "Pediatric Unit"}).`
     );
+  };
+
+  const handleNextPatient = () => {
+    const currentIndex = VALIDATION_SCENARIOS.findIndex(s => s.id === activeScenarioId);
+    const nextIndex = (currentIndex + 1) % VALIDATION_SCENARIOS.length;
+    handleSelectScenario(VALIDATION_SCENARIOS[nextIndex]);
+  };
+
+  const handlePrevPatient = () => {
+    const currentIndex = VALIDATION_SCENARIOS.findIndex(s => s.id === activeScenarioId);
+    const prevIndex = (currentIndex - 1 + VALIDATION_SCENARIOS.length) % VALIDATION_SCENARIOS.length;
+    handleSelectScenario(VALIDATION_SCENARIOS[prevIndex]);
   };
 
   const handleResetToDefault = () => {
@@ -313,7 +326,7 @@ export default function App() {
     setPatient(INITIAL_SAMPLE_PATIENT);
     setHistory(SAMPLE_PATIENT_HISTORY);
     setCompletedPriorityIds([]);
-    addAuditEvent("data_modified", "Reset clinical state to default prototype patient (Leo Vance, 3yo severe septic shock).");
+    addAuditEvent("data_modified", "Switched active chart to Leo Vance (3y M, ED Resus Bay 2).");
   };
 
   // Build "Why am I seeing this?" modal data
@@ -404,8 +417,13 @@ export default function App() {
     <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col antialiased">
       {/* 1. Header (Banner, Clinical Safety Status, Actions) */}
       <Header
+        patient={patient}
         currentWorkflowState={patient.currentWorkflowState}
         geminiMode={geminiStatus}
+        censusCount={VALIDATION_SCENARIOS.length}
+        onOpenCensus={() => setIsCensusOpen(true)}
+        onNextPatient={handleNextPatient}
+        onPrevPatient={handlePrevPatient}
         onOpenAssistant={() => {
           setIsAssistantOpen(true);
           addAuditEvent("assistant_queried", "Clinician opened Ask PediaSepsis AI assistant panel.");
@@ -416,45 +434,38 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 space-y-4">
-        {/* 2. Scenario Testing & Simulation Switcher */}
-        <ScenarioSelectorBar
-          scenarios={VALIDATION_SCENARIOS}
-          selectedScenarioId={activeScenarioId}
-          onSelectScenario={handleSelectScenario}
-          onResetToDefault={handleResetToDefault}
-        />
-
-        {/* 3. Patient Overview Card (Demographics, Weight verification, Workflow state) */}
+        {/* 2. Patient Overview Card (Demographics, Weight verification, Workflow state) */}
         <PatientOverviewCard
           patient={patient}
           onVerifyWeight={() => handleVerifyWeight()}
+          onOpenInterventions={() => setIsInterventionsOpen(true)}
           onChangeWorkflowState={handleWorkflowStateChange}
           onOpenDataEntry={() => setIsDataEntryOpen(true)}
         />
 
-        {/* 4. Active Safety & Deterioration Banner (if critical) */}
+        {/* 3. Active Safety & Deterioration Banner (if critical) */}
         {rulesOutput.criticalAlerts.length > 0 && (
-          <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 shadow-xs">
+          <div className="bg-rose-50 border-2 border-rose-300 rounded-xl p-4 shadow-xs">
             <div className="flex items-start space-x-3">
-              <AlertTriangle className="w-5 h-5 text-red-700 shrink-0 mt-0.5" />
-              <div className="space-y-1 flex-1">
+              <AlertTriangle className="w-5 h-5 text-rose-700 shrink-0 mt-0.5" />
+              <div className="space-y-1.5 flex-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h4 className="text-sm font-bold text-red-900 uppercase tracking-wide">
-                    Critical Clinical Safety Alert ({rulesOutput.criticalAlerts.length} Triggered)
+                  <h4 className="text-sm font-bold text-rose-950 uppercase tracking-wide">
+                    Critical Clinical Safety Alert ({rulesOutput.criticalAlerts.length} Criteria Triggered)
                   </h4>
-                  <span className="text-[10px] font-mono font-bold bg-red-200 text-red-900 px-2 py-0.5 rounded">
-                    Immediate Action Recommended
+                  <span className="text-[10px] font-mono font-bold bg-rose-200 text-rose-950 px-2 py-0.5 rounded">
+                    Stat Bedside Assessment Recommended
                   </span>
                 </div>
-                <div className="text-xs text-red-800 space-y-1 pt-1">
+                <div className="text-xs text-rose-900 space-y-1.5 pt-1">
                   {rulesOutput.criticalAlerts.map((alert: string, idx: number) => (
-                    <div key={idx} className="flex items-start justify-between">
+                    <div key={idx} className="flex items-start justify-between bg-white/70 p-2 rounded border border-rose-200/70">
                       <span>• {alert}</span>
                       <button
                         onClick={() => handleOpenWhySeeingThis(alert, {})}
-                        className="text-[11px] font-bold text-red-900 underline ml-2 shrink-0 cursor-pointer"
+                        className="text-[11px] font-bold text-teal-800 hover:text-teal-900 underline ml-3 shrink-0 cursor-pointer"
                       >
-                        Why am I seeing this?
+                        Inspect Criteria Basis
                       </button>
                     </div>
                   ))}
@@ -569,10 +580,10 @@ export default function App() {
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 mt-8 py-4 px-6 text-center text-xs text-slate-500">
         <p className="font-semibold text-slate-700">
-          PediaSepsis AI — Pediatric Sepsis Decision-Support Environment
+          Chempions AI • Pediatric Sepsis Clinical Decision Support System
         </p>
         <p className="text-[11px] text-slate-400 mt-0.5">
-          Prototype designed strictly for clinician demonstration and workflow research. All data shown is fictional.
+          Grounded in Surviving Sepsis Campaign 2026 pediatric international guidelines. Treating clinician retains independent medical decision authority.
         </p>
       </footer>
 
@@ -610,6 +621,16 @@ export default function App() {
           onClose={() => setWhyModalData({ isOpen: false, title: "", explanation: null })}
         />
       )}
+
+      {/* Patient Census & Unit Roster Modal */}
+      <PatientCensusModal
+        isOpen={isCensusOpen}
+        onClose={() => setIsCensusOpen(false)}
+        scenarios={VALIDATION_SCENARIOS}
+        selectedScenarioId={activeScenarioId}
+        onSelectScenario={handleSelectScenario}
+        onResetToDefault={handleResetToDefault}
+      />
     </div>
   );
 }

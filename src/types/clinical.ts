@@ -92,8 +92,12 @@ export type WorkflowState =
 
 export interface PatientRecord {
   id: string;
-  mrn: string; // Fictional ID (e.g. FIC-PED-9402)
-  isFictional: true;
+  name?: string;
+  sex?: "M" | "F";
+  dob?: string;
+  bedLocation?: string;
+  mrn: string;
+  isFictional?: boolean;
   ageYears: number;
   ageMonths: number;
   ageGroup: AgeGroup;
@@ -211,6 +215,9 @@ export interface ValidationScenario {
   id: string;
   title: string;
   name?: string;
+  patientName?: string;
+  bedLocation?: string;
+  acuityLevel?: string;
   description: string;
   keySafetyCheck: string;
   expectedBehavior: string;

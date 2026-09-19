@@ -299,7 +299,7 @@ export function evaluateClinicalSafetyRules(
       title: "Verify Patient Weight at Bedside",
       category: "data_quality",
       urgency: "critical",
-      whyDisplayed: "Documented weight is marked as FICTIONAL / UNVERIFIED. Pediatric dosing rules block unverified weights.",
+      whyDisplayed: "Documented weight is unverified. Pediatric safety rules block fluid and medication dosing calculations until confirmed on a calibrated bedside scale.",
       supportingData: `Entered weight: ${patient.weightKg ?? "missing"} kg (Unverified).`,
       applicableRuleOrSource: "Deterministic Safety Rules Engine & Hospital Pediatric Medication Safety Standard",
       requiresClinicianConfirmation: true,
