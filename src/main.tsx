@@ -1,10 +1,5 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
+import { Dashboard } from './components/Dashboard';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+export default function App() {
+  return <Dashboard />;
+}
