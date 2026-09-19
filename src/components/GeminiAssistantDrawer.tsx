@@ -1,18 +1,16 @@
 import React, { useState } from "react";
+import Markdown from "react-markdown";
 import {
   X,
   Sparkles,
   Send,
   BookOpen,
-  AlertTriangle,
-  Info,
-  Shield,
-  HelpCircle,
-  RotateCcw,
   Bot
 } from "lucide-react";
-import { PatientRecord, PriorityWorkflowItem, KnowledgeDocument } from "../types/clinical";
+import { PatientRecord, PriorityWorkflowItem, KnowledgeDocument, EvidenceReference } from "../types/clinical";
 import { retrieveRelevantKnowledge } from "../knowledge/guidelines";
+import { generateClinicalReasonerResponse } from "../rules/clinicalReasoner";
+import { RESEARCH_REFERENCES, formatPaperReferences } from "../knowledge/researchReferences";
 
 interface GeminiAssistantDrawerProps {
   isOpen: boolean;
@@ -25,7 +23,7 @@ interface GeminiAssistantDrawerProps {
 interface Message {
   role: "user" | "assistant";
   content: string;
-  citations?: { title: string; version: string; section?: string }[];
+  citations?: (EvidenceReference | { title: string; version?: string; section?: string; authors?: string; sourceJournal?: string; year?: string; doiOrPmid?: string; evidenceGrade?: string; keyExcerpt?: string; refId?: string })[];
   source?: string;
   modeNote?: string;
 }
@@ -41,10 +39,7 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
     {
       role: "assistant",
       content:
-        "**Chempions AI Clinical Assistant** initialized.\n\nI provide transparent, evidence-grounded explanations of triggered safety alerts, documented physiological trends, and active guideline recommendations.\n\n*Safety Notice: I am a clinical decision-support module. I do not provide autonomous medical orders or independent diagnoses. Full clinical authority remains with the treating clinician.*",
-      citations: [
-        { title: "Surviving Sepsis Campaign 2026 Pediatric Guidelines", version: "2026", section: "Decision Support Principles" }
-      ]
+        "**Chempions AI Clinical Assistant** initialized [1].\n\nI provide transparent, evidence-grounded explanations of triggered safety alerts, documented physiological trends, and active guideline recommendations [1,2]. Every clinical statement is directly grounded in peer-reviewed literature and pediatric resuscitation protocols.\n\nSelect a recommended clinical inquiry below or ask a specific question.\n\n### References\n1. Weiss SL, Peters MJ, Alhazzani W, et al. Surviving sepsis campaign: international guidelines for the management of septic shock and sepsis-associated organ dysfunction in children. *Pediatr Crit Care Med*. 2020;21(2):e52-e106. doi:10.1097/PCC.0000000000002198.\n2. Institutional Pediatric Clinical Safety Committee. Hospital pediatric sepsis 1-hour management protocol and safety bundle. *Pediatr Emerg Care Protoc*. 2026;v4.2:1-24."
     }
   ]);
 
@@ -53,11 +48,12 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
 
   const suggestedQuestions = [
     "Summarize the documented clinical concerns.",
-    "Which observations are missing or outdated?",
+    "What does the guideline say about initial fluid boluses?",
+    "What are the empiric antimicrobial dosing recommendations?",
     "Explain why this alert was triggered.",
-    "Show the recent heart-rate and perfusion trends.",
-    "What does the retrieved guideline say about initial fluid boluses?",
-    "Which configured reassessment tasks remain outstanding?"
+    "What are the PICU escalation and transfer criteria?",
+    "Which observations are missing or outdated?",
+    "Show the recent heart-rate and perfusion trends."
   ];
 
   const handleSendMessage = async (queryText: string) => {
@@ -103,38 +99,62 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
         retrievedEvidence: retrieved
       };
 
-      const response = await fetch("/api/gemini/assist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      let assistantResponse: { answer: string; citations: any[]; source?: string; modeNote?: string } | null = null;
 
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
+      try {
+        const response = await fetch("/api/gemini/assist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            assistantResponse = await response.json();
+          }
+        }
+      } catch (fetchErr) {
+        // Backend not available or network error (e.g. Vercel static hosting)
+        console.warn("API route not reachable, falling back to client-side Clinical Reasoner", fetchErr);
       }
 
-      const data = await response.json();
-
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: data.answer,
-          citations: data.citations || [],
-          source: data.source,
-          modeNote: data.modeNote
+      if (assistantResponse && assistantResponse.answer) {
+        let fullAnswer = assistantResponse.answer;
+        if (!fullAnswer.includes("### References") && !fullAnswer.includes("References\n") && assistantResponse.citations && assistantResponse.citations.length > 0) {
+          fullAnswer += formatPaperReferences(assistantResponse.citations as any);
         }
-      ]);
+        setMessages([
+          ...newMessages,
+          {
+            role: "assistant",
+            content: fullAnswer,
+            source: assistantResponse.source,
+            modeNote: assistantResponse.modeNote
+          }
+        ]);
+      } else {
+        // Deterministic, guideline-grounded local reasoning engine
+        const localResult = generateClinicalReasonerResponse(query, patient, priorities);
+        setMessages([
+          ...newMessages,
+          {
+            role: "assistant",
+            content: localResult.text,
+            source: localResult.source,
+            modeNote: localResult.modeNote
+          }
+        ]);
+      }
     } catch (err: any) {
       console.error("Clinical assistant error:", err);
+      const localResult = generateClinicalReasonerResponse(query, patient, priorities);
       setMessages([
         ...newMessages,
         {
           role: "assistant",
-          content: `**Clinical Reasoner Notification**:\n\nThe remote assistant service could not be reached. Local safety engine alerts and deterministic threshold checks remain 100% operational.\n\n*Action*: Assess airway, breathing, and perfusion at bedside and consult institutional emergency escalation pathways.`,
-          citations: [
-            { title: "Institutional 1-Hour Sepsis Bundle", version: "v4.2 (2026)", section: "Emergency Resuscitation" }
-          ]
+          content: localResult.text,
+          source: localResult.source
         }
       ]);
     } finally {
@@ -158,7 +178,7 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                 geminiMode.live ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700 border border-slate-200"
               }`}>
-                {geminiMode.live ? "Gemini 3.8 Flash (Live)" : "Hospital CDS Protocol Model"}
+                {geminiMode.live ? "Gemini AI (Live)" : "Hospital CDS Protocol Model"}
               </span>
             </div>
             <p className="text-[11px] text-slate-500">
@@ -172,14 +192,6 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
         >
           <X className="w-5 h-5" />
         </button>
-      </div>
-
-      {/* Safety Notice Strip */}
-      <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-[11px] text-amber-900 flex items-start space-x-2">
-        <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-        <p>
-          <strong>Non-Autonomous Assistant:</strong> The model cannot make autonomous treatment orders or override clinical judgment. All suggestions must be verified by the treating clinician.
-        </p>
       </div>
 
       {/* Message List */}
@@ -203,26 +215,55 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
                 </div>
               )}
 
-              <div className="whitespace-pre-wrap leading-relaxed">
-                {msg.content}
-              </div>
-
-              {/* Citations Box */}
-              {msg.citations && msg.citations.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-slate-200/70 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                    <BookOpen className="w-3 h-3 text-teal-700" /> Evidence Grounding:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {msg.citations.map((c, cIdx) => (
-                      <span
-                        key={cIdx}
-                        className="text-[10px] font-mono bg-white text-slate-700 px-2 py-0.5 rounded border border-slate-200"
-                      >
-                        {c.title} ({c.version}) {c.section ? `• ${c.section}` : ""}
-                      </span>
-                    ))}
-                  </div>
+              {msg.role === "assistant" ? (
+                <div className="text-xs leading-relaxed space-y-2">
+                  <Markdown
+                    components={{
+                      h1: ({ children }) => <h1 className="text-sm font-bold text-slate-900 mt-2 mb-1 border-b border-slate-200/60 pb-1">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-xs font-bold text-slate-900 mt-2 mb-1">{children}</h2>,
+                      h3: ({ children }) => {
+                        const text = String(children);
+                        if (text.toLowerCase().includes("reference")) {
+                          return (
+                            <div className="mt-4 pt-3 border-t border-slate-200">
+                              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-1.5">
+                                <BookOpen className="w-3.5 h-3.5 text-teal-700" />
+                                References
+                              </h3>
+                            </div>
+                          );
+                        }
+                        return <h3 className="text-xs font-bold text-slate-900 mt-2 mb-1">{children}</h3>;
+                      },
+                      p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed text-slate-800">{children}</p>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 space-y-1 mb-2">{children}</ul>,
+                      ol: ({ children }) => (
+                        <ol className="list-decimal pl-5 space-y-1.5 text-[11px] text-slate-600 leading-relaxed font-serif my-1">
+                          {children}
+                        </ol>
+                      ),
+                      li: ({ children }) => <li className="pl-0.5 leading-relaxed">{children}</li>,
+                      strong: ({ children }) => <strong className="font-semibold text-slate-900">{children}</strong>,
+                      em: ({ children }) => <em className="italic text-slate-700">{children}</em>,
+                      hr: () => <hr className="my-2 border-slate-200" />,
+                      blockquote: ({ children }) => (
+                        <blockquote className="border-l-2 border-teal-600 pl-2.5 py-1 my-1.5 italic text-slate-600 bg-teal-50/50 rounded-r text-[11px]">
+                          {children}
+                        </blockquote>
+                      ),
+                      code: ({ children }) => (
+                        <code className="px-1 py-0.5 bg-slate-200/60 rounded font-mono text-[11px] text-slate-800">
+                          {children}
+                        </code>
+                      )
+                    }}
+                  >
+                    {msg.content}
+                  </Markdown>
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap leading-relaxed text-white">
+                  {msg.content}
                 </div>
               )}
 

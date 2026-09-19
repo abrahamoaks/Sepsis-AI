@@ -146,6 +146,20 @@ export interface PriorityWorkflowItem {
   whyAmISeeingThis: WhySeeingThisExplanation;
 }
 
+export interface EvidenceReference {
+  refId: string;
+  title: string;
+  authors: string;
+  sourceJournal: string;
+  year: string;
+  doiOrPmid?: string;
+  evidenceGrade?: string;
+  keyExcerpt?: string;
+  version?: string;
+  section?: string;
+  citationString?: string;
+}
+
 export interface WhySeeingThisExplanation {
   documentedFindings: { parameter: string; value: string; timestamp: string; source: DataSourceType }[];
   ruleConditionTriggered: string;
