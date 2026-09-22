@@ -39,7 +39,21 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
     {
       role: "assistant",
       content:
-        "**Chempions AI Clinical Assistant** initialized [1].\n\nI provide transparent, evidence-grounded explanations of triggered safety alerts, documented physiological trends, and active guideline recommendations [1,2]. Every clinical statement is directly grounded in peer-reviewed literature and pediatric resuscitation protocols.\n\nSelect a recommended clinical inquiry below or ask a specific question.\n\n### References\n1. Weiss SL, Peters MJ, Alhazzani W, et al. Surviving sepsis campaign: international guidelines for the management of septic shock and sepsis-associated organ dysfunction in children. *Pediatr Crit Care Med*. 2020;21(2):e52-e106. doi:10.1097/PCC.0000000000002198.\n2. Institutional Pediatric Clinical Safety Committee. Hospital pediatric sepsis 1-hour management protocol and safety bundle. *Pediatr Emerg Care Protoc*. 2026;v4.2:1-24."
+        `### 1. Immediate Action Plan
+1. **Safety Weight Verification**: Confirm scale weight (${patient.weightKg || 14.2} kg) before calculating fluid or drug doses [3].
+2. **Pre-Antibiotic Blood Cultures**: Obtain 2 sets peripheral cultures stat (do not delay antibiotic >45m) [1].
+3. **Broad-Spectrum IV Antimicrobial**: Infuse Ceftriaxone **${Math.round((patient.weightKg || 14.2) * 50)} mg IV** (50 mg/kg) within 60 minutes of recognition [1,3].
+4. **Targeted Fluid Bolus**: Administer balanced crystalloid **${Math.round((patient.weightKg || 14.2) * 10)}–${Math.round((patient.weightKg || 14.2) * 20)} mL** (10–20 mL/kg) over 15–20 minutes with serial perfusion checks [1].
+
+### 2. Clinical Follow-Up Questions
+1. Does the patient exhibit signs of cold shock (capillary refill >2s, diminished distal pulses)?
+2. What is the current work of breathing and oxygen saturation on room air?
+3. Has the bedside scale weight been physically calibrated?
+
+### References
+1. Weiss SL, Peters MJ, et al. Surviving Sepsis Campaign: International Guidelines for Management of Septic Shock in Children. Pediatr Crit Care Med. 2020.
+2. Schlapbach LJ, et al. Phoenix Criteria for Pediatric Sepsis. JAMA. 2024.
+3. Institutional Pediatric Sepsis 1-Hour Management Protocol & Safety Bundle. 2026.`
     }
   ]);
 
@@ -47,13 +61,11 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const suggestedQuestions = [
-    "Summarize the documented clinical concerns.",
-    "What does the guideline say about initial fluid boluses?",
-    "What are the empiric antimicrobial dosing recommendations?",
-    "Explain why this alert was triggered.",
-    "What are the PICU escalation and transfer criteria?",
-    "Which observations are missing or outdated?",
-    "Show the recent heart-rate and perfusion trends."
+    "⚡ Immediate Action Plan",
+    "💊 Weight & Dosing (14.2 kg)",
+    "🫁 O2 & Fluid Resuscitation",
+    "🚨 PICU Escalation Criteria",
+    "⚖️ Bedside Weight Safety Check"
   ];
 
   const handleSendMessage = async (queryText: string) => {
@@ -165,8 +177,15 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[520px] bg-white shadow-2xl border-l border-slate-200 flex flex-col">
-      {/* Header */}
+    <>
+      {/* Backdrop overlay */}
+      <div
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 transition-opacity cursor-pointer"
+        onClick={onClose}
+      />
+
+      <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[500px] bg-white shadow-2xl border-l border-slate-200 flex flex-col">
+        {/* Header */}
       <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
         <div className="flex items-center space-x-2.5">
           <div className="w-8 h-8 rounded-lg bg-teal-700 text-white flex items-center justify-center">
@@ -326,5 +345,6 @@ export const GeminiAssistantDrawer: React.FC<GeminiAssistantDrawerProps> = ({
         </form>
       </div>
     </div>
+    </>
   );
 };

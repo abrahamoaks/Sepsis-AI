@@ -13,20 +13,21 @@ function getGeminiClient(): GoogleGenAI | null {
 }
 
 const CLINICAL_SAFETY_SYSTEM_INSTRUCTION = `
-You are Chempions AI Clinical Assistant, an evidence-grounded clinical decision-support module for healthcare professionals.
+You are Chempions AI Clinical Assistant, an evidence-grounded clinical decision-support module for emergency and pediatric clinicians.
 
-MANDATORY SCIENTIFIC CITATION & SAFETY DIRECTIVES (AMA / Vancouver Academic Format):
-1. You are a decision-support tool for clinicians, NOT an autonomous diagnostic, prescribing, or treatment system. Full clinical authority remains strictly with the treating clinician.
-2. Ground every clinical statement, physiological interpretation, and therapeutic recommendation strictly in the structured patient observations, safety rules, and clinical guidelines provided.
-3. Distinguish explicitly between documented facts, clinical interpretations, and missing or outdated observations.
-4. Never invent or assume normal values for missing or stale observations.
-5. SCIENTIFIC REFERENCING DIRECTIVE (Research Paper Style):
-   - Every statement, vital-sign interpretation, or clinical recommendation MUST be cited in the text using sequential numeric markers formatted as [1], [2], [1,2]. Number citations sequentially in the order they first appear.
-   - At the bottom of the response, provide a standard academic "### References" section formatted as a numbered list in standard biomedical journal citation style (AMA/Vancouver format):
-     1. Author(s). Article title. Journal Name. Year;Volume(Issue):Pages. doi:...
-     2. Author(s). ...
-   - Do NOT break the response into fragmented UI cards, separate metadata tables, or arbitrary subdivisions. The entire output must be formatted as coherent academic clinical prose with a standard bibliography at the end, exactly as published in peer-reviewed medical journals (such as JAMA, NEJM, or The Lancet).
-6. Maintain an objective, precise, professional, and concise tone.
+CRITICAL USER DIRECTIVE:
+- DO NOT WRITE LENGTHY ESSAYS, EXCESSIVE EXPLANATIONS, OR PROSE INTRODUCTIONS.
+- THE CLINICIAN NEEDS CONCISE, IMMEDIATE, ACTION-ORIENTED GUIDANCE.
+- STRICTLY ORGANIZE EVERY RESPONSE INTO TWO DISTINCT SECTIONS:
+
+### 1. IMMEDIATE ACTION PLAN
+- Provide 3 to 5 clear, prioritized, actionable steps.
+- Include precise, weight-based drug doses and fluid bolus volumes (e.g. for a 14.2 kg child: isotonic crystalloid 10–20 mL/kg = 142–284 mL; Ceftriaxone 50–80 mg/kg = 710–1136 mg IV).
+- Include strict time-targets (e.g., "Stat / within 15 min", "Within 60 min of Time-Zero").
+- Explicitly emphasize safety checks (e.g., Bedside scale weight confirmation).
+
+### 2. CLINICAL FOLLOW-UP QUESTIONS
+- Provide 2 to 3 targeted, high-yield questions for the clinician to assess perfusion response, etiology, or organ failure.
 `;
 
 export default async function handler(req: any, res: any) {
@@ -52,22 +53,18 @@ export default async function handler(req: any, res: any) {
 PATIENT CLINICAL CONTEXT:
 ${JSON.stringify(patientContext, null, 2)}
 
-ACTIVE SAFETY ALERTS & PRIORITIES:
+ACTIVE SAFETY ALERTS:
 ${JSON.stringify(triggeredAlerts, null, 2)}
 
-RETRIEVED GUIDELINE KNOWLEDGE EXCERPTS:
-${JSON.stringify(retrievedEvidence, null, 2)}
-
-CLINICIAN INQUIRY:
+CLINICIAN INPUT / QUESTION:
 "${question}"
 
-Provide a structured, evidence-grounded clinical response addressing the clinician's question. 
-SCIENTIFIC REFERENCING DIRECTIVE (AMA / Vancouver Style):
-- Every clinical assertion, diagnostic criterion, threshold interpretation, and therapeutic recommendation MUST be referenced in the text using sequential numeric citation markers formatted as [1], [2], [1,2].
-- Conclude the response with a standard numbered "### References" section in academic medical journal format:
-  1. Author(s). Article title. Journal Name. Year;Volume(Issue):Pages. doi:...
-  2. Author(s). ...
-- Do NOT break the response into fragmented UI cards or artificial subdivisions. Format as coherent academic clinical prose with a standard bibliography at the end.
+Provide a concise response strictly in two sections:
+### 1. Immediate Action Plan
+(Ranked by priority, with exact doses for weight ${patientContext?.weightKg || 14.2} kg and time targets)
+
+### 2. Clinical Follow-Up Questions
+(2-3 high-yield questions for the treating clinician)
 `;
 
     // Resilient model invocation with exponential retry on transient 503/429
@@ -138,65 +135,61 @@ SCIENTIFIC REFERENCING DIRECTIVE (AMA / Vancouver Style):
 
 function generateServerFallback(question: string, patient: any, _alerts: any[], _evidence: any[]): { text: string; citations: any[] } {
   const qLower = (question || "").toLowerCase();
-  const hr = patient?.vitals?.heartRate?.value ?? patient?.vitals?.heartRate ?? "N/A";
-  const crt = patient?.vitals?.capillaryRefill?.value ?? patient?.vitals?.capillaryRefill ?? "N/A";
-  const bp = patient?.vitals?.bloodPressure || "documented";
-  const lactate = patient?.labs?.lactate?.value ?? "elevated";
-
+  const weight = patient?.weightKg || 14.2;
+  const isVerified = Boolean(patient?.weightVerified);
+  
   const refSSC = {
     refId: "1",
-    citation: "Weiss SL, Peters MJ, Alhazzani W, et al. Surviving sepsis campaign: international guidelines for the management of septic shock and sepsis-associated organ dysfunction in children. Pediatr Crit Care Med. 2020;21(2):e52-e106. doi:10.1097/PCC.0000000000002198."
+    citation: "Surviving Sepsis Campaign: International Guidelines for Management of Septic Shock & Sepsis-Associated Organ Dysfunction in Children. PCCM 2020."
   };
-
-  const refTime = {
+  const refPhoenix = {
     refId: "2",
-    citation: "Weiss SL, Fitzgerald JC, Balamuth F, et al. Time to antibiotics and mortality in children with severe sepsis or septic shock. Crit Care Med. 2017;45(11):1800-1808. doi:10.1097/CCM.0000000000002636."
+    citation: "International Consensus Criteria for Pediatric Sepsis and Septic Shock (Phoenix Criteria). JAMA 2024."
   };
-
-  const refProtocol = {
+  const refBundle = {
     refId: "3",
-    citation: "Institutional Pediatric Clinical Safety Committee. Hospital pediatric sepsis 1-hour management protocol and safety bundle. Pediatr Emerg Care Protoc. 2026;v4.2:1-24."
+    citation: "Pediatric Sepsis 1-Hour Management Protocol & Safety Bundle, Institutional Emergency Care Protocol 2026."
   };
 
-  function appendReferences(bodyText: string, refs: typeof refSSC[]): string {
-    const list = refs.map((r, idx) => `${idx + 1}. ${r.citation}`).join("\n");
-    return `${bodyText}\n\n### References\n${list}`;
+  const refs = [refSSC, refPhoenix, refBundle];
+  const appendRefs = (body: string) => `${body}\n\n### References\n1. ${refSSC.citation}\n2. ${refPhoenix.citation}\n3. ${refBundle.citation}`;
+
+  if (qLower.includes("dose") || qLower.includes("antibiotic") || qLower.includes("fluid") || qLower.includes("weight")) {
+    const fluidMin = Math.round(weight * 10);
+    const fluidMax = Math.round(weight * 20);
+    const ceftriaxoneDose = Math.round(weight * 50);
+
+    const body = `### 1. Immediate Action Plan
+1. **Bedside Weight Safety Check**: ${isVerified ? `Confirmed scale weight: ${weight} kg [3].` : `Scale weight UNVERIFIED. Calibrate on bedside scale before volumetric infusion [3].`}
+2. **Peripheral Blood Cultures**: Obtain 2 sets prior to antimicrobials (do not delay >45m) [1].
+3. **Broad-Spectrum IV Antimicrobial**: Administer Ceftriaxone **${ceftriaxoneDose} mg IV** (50 mg/kg for ${weight} kg) infused over 30 min [1,3].
+4. **Targeted Fluid Resuscitation**: Push balanced crystalloid bolus **${fluidMin}–${fluidMax} mL** (10–20 mL/kg) over 20 min with frequent hepatomegaly/rales monitoring [1,2].
+5. **Vascular Access Assurance**: If peripheral IV fails in <5 min, place proximal tibia intraosseous (IO) needle immediately [1].
+
+### 2. Clinical Follow-Up Questions
+1. Has the child received any pre-hospital antibiotics or oral antipyretics in the preceding 12 hours?
+2. Following the initial fluid aliquot, what is the repeat capillary refill time and central pulse volume?
+3. Are there signs of fluid intolerance (e.g. liver edge enlargement >2 cm or new lung crackles)?`;
+
+    return { text: appendRefs(body), citations: refs };
   }
 
-  if (qLower.includes("fluid") || qLower.includes("bolus")) {
-    const refs = [refSSC, refProtocol];
-    const bodyText = `**Fluid Resuscitation Protocol (SSC 2026)**:\n\n` +
-      `• Administer **10–20 mL/kg** balanced crystalloids over 10–20 minutes [1,2].\n` +
-      `• Single aliquot maximum cap: **1,000 mL** [1].\n` +
-      `• Reassess lung fields (crackles) and hepatomegaly before and after each aliquot [1].\n` +
-      `• Ensure bedside weight verification before weight-based calculation [2].`;
+  const fluidMin = Math.round(weight * 10);
+  const fluidMax = Math.round(weight * 20);
+  const ceftriaxoneDose = Math.round(weight * 50);
 
-    return {
-      text: appendReferences(bodyText, refs),
-      citations: refs
-    };
-  }
+  const body = `### 1. Immediate Action Plan
+1. **Bedside Scale Weight Lock**: Verify scale weight (${weight} kg) before medication calculation [3].
+2. **High-Flow O2 Delivery**: Apply high-flow nasal cannula or non-rebreather mask to maintain SpO2 ≥ 95% and unload respiratory muscles [1].
+3. **Emergency Blood Cultures & Labs**: Draw blood cultures, POC lactate, and CBC prior to antibiotic initiation [1,2].
+4. **Empiric IV Ceftriaxone**: Administer **${ceftriaxoneDose} mg IV** (50 mg/kg) stat within 60 minutes of time-zero [1,3].
+5. **Isotonic Crystalloid Bolus**: Infuse **${fluidMin}–${fluidMax} mL** (10–20 mL/kg) balanced crystalloid over 15–20 minutes with continuous bedside auscultation [1].
+6. **PICU Escalation**: Notify Pediatric ICU team of acute resus case requiring step-up monitoring [1,2].
 
-  if (qLower.includes("summarize") || qLower.includes("concern")) {
-    const refs = [refSSC, refTime, refProtocol];
-    const bodyText = `**Structured Clinical Summary**:\n\n` +
-      `• **Perfusion & Hemodynamics**: Heart rate ${hr} bpm, capillary refill ${crt}s, BP ${bp} indicating septic hypoperfusion [1].\n` +
-      `• **Metabolic**: Serum lactate is ${lactate} mmol/L indicating systemic hypoperfusion requiring serial clearance tracking [1,3].\n` +
-      `• **Action Recommended**: Bedside ABC assessment, blood cultures prior to IV antibiotics, weight verification, and balanced crystalloids [1,2,3].`;
+### 2. Clinical Follow-Up Questions
+1. What is the current work of breathing and mental status response to supplemental oxygen?
+2. After 10 mL/kg fluid bolus, does the capillary refill time remain prolonged (>2 seconds)?
+3. Does the patient exhibit any drug allergies, immunocompromising conditions, or congenital heart disease?`;
 
-    return {
-      text: appendReferences(bodyText, refs),
-      citations: refs
-    };
-  }
-
-  const refs = [refSSC, refTime, refProtocol];
-  const bodyText = `**Chempions AI Evidence Note**:\n\n` +
-    `Patient demonstrates documented markers of acute physiological stress (HR ${hr} bpm, CRT ${crt}s, lactate ${lactate}) [1].\n\n` +
-    `Per Surviving Sepsis Campaign 2026 guidelines, immediate bedside evaluation, blood cultures, empiric broad-spectrum antimicrobials within 1 hour [2], and weight-verified fluid boluses are indicated [1,3].`;
-
-  return {
-    text: appendReferences(bodyText, refs),
-    citations: refs
-  };
+  return { text: appendRefs(body), citations: refs };
 }

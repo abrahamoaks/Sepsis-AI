@@ -5,13 +5,11 @@ import {
   Wind,
   Brain,
   Thermometer,
-  AlertTriangle,
-  HelpCircle,
-  FileQuestion,
   ChevronRight,
-  Clock,
-  Droplets
+  Droplets,
+  AlertTriangle
 } from "lucide-react";
+import { motion } from "motion/react";
 import { PatientRecord } from "../types/clinical";
 import { PediatricVitalThresholds } from "../rules/pediatricEngine";
 
@@ -30,7 +28,6 @@ export const ClinicalStatusCards: React.FC<ClinicalStatusCardsProps> = ({
 }) => {
   const { vitals, labs } = patient;
 
-  // Helpers to categorize status
   const hrVal = vitals.heartRate.value;
   const isHrAbnormal = hrVal !== null && (hrVal > thresholds.hrNormalMax || hrVal < thresholds.hrNormalMin);
 
@@ -63,335 +60,314 @@ export const ClinicalStatusCards: React.FC<ClinicalStatusCardsProps> = ({
   const isTempAbnormal = tempVal !== null && (tempVal >= 38.5 || tempVal < 36.0);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
-          <Activity className="w-4 h-4 text-teal-700" /> Current Physiological Systems & Findings
-        </h3>
-        <span className="text-[11px] text-slate-500">
-          Age reference: {thresholds.ageGroupLabel}
+    <div className="space-y-2.5">
+      {/* Section Header */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-teal-700" />
+          <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800">
+            Vital Signs & Perfusion Systems
+          </h3>
+        </div>
+        <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+          Ref: {thresholds.ageGroupLabel}
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Grid of 4 Cards: Appear on Scroll */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* CARD 1: Circulation & Perfusion */}
-        <div className={`rounded-xl border p-4 transition-all flex flex-col justify-between ${
-          isHrAbnormal || isCrtAbnormal || isBpAbnormal || isPeriphAbnormal
-            ? "bg-red-50/70 border-red-200"
-            : hrVal === null || sbpVal === null || crtVal === null
-            ? "bg-amber-50/50 border-amber-200"
-            : "bg-white border-slate-200"
-        }`}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.35, delay: 0.05 }}
+          className={`rounded-2xl border p-4 transition-all flex flex-col justify-between shadow-2xs ${
+            isHrAbnormal || isCrtAbnormal || isBpAbnormal || isPeriphAbnormal
+              ? "bg-rose-50/60 border-rose-200"
+              : "bg-white border-slate-200/80"
+          }`}
+        >
           <div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
-              <div className="flex items-center space-x-1.5 text-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
                 <Heart className="w-4 h-4 text-rose-600" />
-                <span className="text-xs font-bold uppercase tracking-wider">Circulation & Perfusion</span>
+                <span>Circulation & Shock</span>
               </div>
               {isHrAbnormal || isCrtAbnormal || isBpAbnormal ? (
-                <span className="text-[10px] font-bold uppercase bg-red-100 text-red-800 px-2 py-0.5 rounded border border-red-300">
-                  Abnormal Finding
-                </span>
-              ) : hrVal === null || sbpVal === null ? (
-                <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-300">
-                  Insufficient Info
+                <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200">
+                  Critical
                 </span>
               ) : (
-                <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                  Within Limits
+                <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                  Normal
                 </span>
               )}
             </div>
 
-            <div className="mt-3 space-y-2 text-xs">
-              {/* Heart Rate */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Heart Rate:</span>
-                {hrVal !== null ? (
-                  <span className={`font-mono font-bold ${isHrAbnormal ? "text-red-700 text-sm" : "text-slate-900"}`}>
-                    {hrVal} bpm {isHrAbnormal && `(> ${thresholds.hrNormalMax} max)`}
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Missing Observation</span>
-                )}
+            {/* Quick Metrics */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">Heart Rate</span>
+                <span className={`text-lg font-black font-mono leading-tight ${isHrAbnormal ? "text-rose-700" : "text-slate-900"}`}>
+                  {hrVal ?? "--"} <span className="text-[11px] font-normal text-slate-500">bpm</span>
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">{`Max ${thresholds.hrNormalMax}`}</span>
               </div>
 
-              {/* Capillary Refill */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Capillary Refill:</span>
-                {crtVal !== null ? (
-                  <span className={`font-mono font-bold ${isCrtAbnormal ? "text-red-700" : "text-slate-900"}`}>
-                    {crtVal} sec {isCrtAbnormal && "(> 2s prolonged)"}
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Missing Observation</span>
-                )}
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">Cap Refill</span>
+                <span className={`text-lg font-black font-mono leading-tight ${isCrtAbnormal ? "text-rose-700" : "text-slate-900"}`}>
+                  {crtVal !== null ? `${crtVal}s` : "--"}
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">&gt; 2s prolonged</span>
               </div>
 
-              {/* Blood Pressure */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Blood Pressure:</span>
-                {sbpVal !== null ? (
-                  <span className={`font-mono font-bold ${isBpAbnormal ? "text-red-700 text-sm" : "text-slate-900"}`}>
-                    {sbpVal}/{vitals.diastolicBP.value ?? "?"} mmHg {isBpAbnormal && `(≤ ${thresholds.hypotensionThreshold} hypotensive)`}
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Missing Observation</span>
-                )}
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">Blood Pressure</span>
+                <span className={`text-base font-black font-mono leading-tight ${isBpAbnormal ? "text-rose-700" : "text-slate-900"}`}>
+                  {sbpVal !== null ? `${sbpVal}/${vitals.diastolicBP.value ?? "-"}` : "--"}
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">{`Hypo ≤${thresholds.hypotensionThreshold}`}</span>
               </div>
 
-              {/* Peripheral Temp */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Peripheries:</span>
-                {periphVal ? (
-                  <span className={`font-semibold capitalize ${isPeriphAbnormal ? "text-red-700" : "text-slate-800"}`}>
-                    {periphVal}
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Not Documented</span>
-                )}
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">Peripheries</span>
+                <span className={`text-xs font-bold capitalize block truncate mt-1 ${isPeriphAbnormal ? "text-rose-700" : "text-slate-800"}`}>
+                  {periphVal || "Normal"}
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">Pulses / Temp</span>
               </div>
             </div>
           </div>
 
           <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-mono">
-              Src: {vitals.heartRate.sourceLabel ? "Multi-source" : "Manual"}
-            </span>
+            <span className="text-[10px] text-slate-400 font-mono">Exam: Bedside</span>
             <button
-              onClick={() => onOpenWhySeeingThis("Circulation & Perfusion Assessment", { hrVal, crtVal, sbpVal, periphVal })}
-              className="text-[11px] text-teal-800 hover:text-teal-900 font-semibold flex items-center gap-0.5 cursor-pointer"
+              onClick={() => onOpenWhySeeingThis("Circulation & Shock Alert", { hrVal, crtVal, sbpVal, periphVal })}
+              className="text-[11px] text-teal-800 hover:text-teal-900 font-bold flex items-center gap-0.5 cursor-pointer"
             >
-              Why this alert? <ChevronRight className="w-3 h-3" />
+              Details <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* CARD 2: Respiratory Status */}
-        <div className={`rounded-xl border p-4 transition-all flex flex-col justify-between ${
-          isRrAbnormal || isSpo2Abnormal
-            ? "bg-red-50/70 border-red-200"
-            : rrVal === null || spo2Val === null
-            ? "bg-amber-50/50 border-amber-200"
-            : "bg-white border-slate-200"
-        }`}>
+        {/* CARD 2: Respiratory & Gas Exchange */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.35, delay: 0.1 }}
+          className={`rounded-2xl border p-4 transition-all flex flex-col justify-between shadow-2xs ${
+            isRrAbnormal || isSpo2Abnormal
+              ? "bg-amber-50/60 border-amber-200"
+              : "bg-white border-slate-200/80"
+          }`}
+        >
           <div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
-              <div className="flex items-center space-x-1.5 text-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
                 <Wind className="w-4 h-4 text-sky-600" />
-                <span className="text-xs font-bold uppercase tracking-wider">Respiratory Status</span>
+                <span>Respiration & O2</span>
               </div>
               {isRrAbnormal || isSpo2Abnormal ? (
-                <span className="text-[10px] font-bold uppercase bg-red-100 text-red-800 px-2 py-0.5 rounded border border-red-300">
-                  Abnormal Finding
-                </span>
-              ) : rrVal === null || spo2Val === null ? (
-                <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-300">
-                  Insufficient Info
+                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                  Tachypneic
                 </span>
               ) : (
-                <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                  No Configured Alert
+                <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                  Adequate
                 </span>
               )}
             </div>
 
-            <div className="mt-3 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Respiratory Rate:</span>
-                {rrVal !== null ? (
-                  <span className={`font-mono font-bold ${isRrAbnormal ? "text-red-700 text-sm" : "text-slate-900"}`}>
-                    {rrVal} /min {isRrAbnormal && `(> ${thresholds.rrNormalMax} tachypneic)`}
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Missing Observation</span>
-                )}
+            {/* Quick Metrics */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">Resp Rate</span>
+                <span className={`text-lg font-black font-mono leading-tight ${isRrAbnormal ? "text-amber-800" : "text-slate-900"}`}>
+                  {rrVal ?? "--"} <span className="text-[11px] font-normal text-slate-500">/min</span>
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">{`Max ${thresholds.rrNormalMax}`}</span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Oxygen Saturation:</span>
-                {spo2Val !== null ? (
-                  <span className={`font-mono font-bold ${isSpo2Abnormal ? "text-red-700 text-sm" : "text-slate-900"}`}>
-                    {spo2Val}% {isSpo2Abnormal && "(< 92% hypoxemia)"}
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Missing Observation</span>
-                )}
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">SpO2</span>
+                <span className={`text-lg font-black font-mono leading-tight ${isSpo2Abnormal ? "text-rose-700" : "text-slate-900"}`}>
+                  {spo2Val !== null ? `${spo2Val}%` : "--"}
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">&lt; 92% alert</span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Oxygen Delivery:</span>
-                <span className="font-semibold text-slate-800 capitalize">
-                  {patient.respiratorySupport.replace(/_/g, " ")}
+              <div className="col-span-2 bg-white/80 p-2 rounded-xl border border-slate-100 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-500 font-medium block">Oxygen Device</span>
+                  <span className="text-xs font-bold text-slate-800 capitalize">
+                    {patient.respiratorySupport.replace(/_/g, " ")}
+                  </span>
+                </div>
+                <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  {isSpo2Abnormal ? "High Flow Req." : "Target ≥94%"}
                 </span>
               </div>
             </div>
           </div>
 
           <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-mono">Work of Breathing: High</span>
+            <span className="text-[10px] text-slate-400 font-mono">Airway: Patent</span>
             <button
-              onClick={() => onOpenWhySeeingThis("Respiratory Status Criteria", { rrVal, spo2Val, support: patient.respiratorySupport })}
-              className="text-[11px] text-teal-800 hover:text-teal-900 font-semibold flex items-center gap-0.5 cursor-pointer"
+              onClick={() => onOpenWhySeeingThis("Respiratory Assessment", { rrVal, spo2Val, support: patient.respiratorySupport })}
+              className="text-[11px] text-teal-800 hover:text-teal-900 font-bold flex items-center gap-0.5 cursor-pointer"
             >
-              Why this alert? <ChevronRight className="w-3 h-3" />
+              Details <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* CARD 3: Neurological & Perfusion */}
-        <div className={`rounded-xl border p-4 transition-all flex flex-col justify-between ${
-          isMentalAbnormal
-            ? "bg-red-50/70 border-red-200"
-            : mentalVal === null
-            ? "bg-amber-50/50 border-amber-200"
-            : "bg-white border-slate-200"
-        }`}>
+        {/* CARD 3: Neurologic Status */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.35, delay: 0.15 }}
+          className={`rounded-2xl border p-4 transition-all flex flex-col justify-between shadow-2xs ${
+            isMentalAbnormal
+              ? "bg-purple-50/60 border-purple-200"
+              : "bg-white border-slate-200/80"
+          }`}
+        >
           <div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
-              <div className="flex items-center space-x-1.5 text-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
                 <Brain className="w-4 h-4 text-purple-600" />
-                <span className="text-xs font-bold uppercase tracking-wider">Neurological Status</span>
+                <span>Neurologic (AVPU)</span>
               </div>
               {isMentalAbnormal ? (
-                <span className="text-[10px] font-bold uppercase bg-red-100 text-red-800 px-2 py-0.5 rounded border border-red-300">
-                  Abnormal Finding
-                </span>
-              ) : mentalVal === null ? (
-                <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-300">
-                  Requires Reassessment
+                <span className="text-[10px] font-bold text-purple-800 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-200">
+                  Altered
                 </span>
               ) : (
-                <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
                   Alert
                 </span>
               )}
             </div>
 
-            <div className="mt-3 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Mental Status:</span>
-                {mentalVal ? (
-                  <span className={`font-bold uppercase ${isMentalAbnormal ? "text-red-700 text-sm" : "text-slate-900"}`}>
-                    {mentalVal}
+            {/* Quick Metrics */}
+            <div className="mt-3 space-y-2">
+              <div className="bg-white/80 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-500 font-medium block">Mental Status</span>
+                  <span className={`text-base font-black uppercase ${isMentalAbnormal ? "text-purple-900" : "text-slate-900"}`}>
+                    {mentalVal || "Unrecorded"}
                   </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Missing Observation</span>
-                )}
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-100 text-purple-800">
+                  {mentalVal === "alert" ? "A" : mentalVal === "verbal" ? "V" : mentalVal === "pain" ? "P" : "U"}
+                </span>
               </div>
 
-              <p className="text-[11px] text-slate-600 leading-tight">
-                {isMentalAbnormal
-                  ? "Altered responsiveness reflects impaired cerebral perfusion in pediatric sepsis."
-                  : "Normal interaction with parents and examiners."}
-              </p>
-
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                <span>Pupillary / Tone:</span>
-                <span className="font-medium text-slate-700">Hypotonic upon exam</span>
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">Pupils & Tone</span>
+                <span className="text-xs font-semibold text-slate-700 block mt-0.5">
+                  Equal, reactive • Hypotonic
+                </span>
               </div>
             </div>
           </div>
 
           <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-mono">AVPU: {mentalVal?.toUpperCase()}</span>
+            <span className="text-[10px] text-slate-400 font-mono">Exam: Bedside</span>
             <button
-              onClick={() => onOpenWhySeeingThis("Neurological Dysfunction Criteria", { mentalVal })}
-              className="text-[11px] text-teal-800 hover:text-teal-900 font-semibold flex items-center gap-0.5 cursor-pointer"
+              onClick={() => onOpenWhySeeingThis("Neurologic / AVPU Assessment", { mentalVal })}
+              className="text-[11px] text-teal-800 hover:text-teal-900 font-bold flex items-center gap-0.5 cursor-pointer"
             >
-              Why this alert? <ChevronRight className="w-3 h-3" />
+              Details <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* CARD 4: Labs & Metabolic Status */}
-        <div className={`rounded-xl border p-4 transition-all flex flex-col justify-between ${
-          isLactateCritical || isGlucoseLow
-            ? "bg-red-50/70 border-red-200"
-            : isLactateElevated || isTempAbnormal
-            ? "bg-amber-50/70 border-amber-200"
-            : lactateVal === null
-            ? "bg-amber-50/50 border-amber-200"
-            : "bg-white border-slate-200"
-        }`}>
+        {/* CARD 4: Metabolic & Lactate */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.35, delay: 0.2 }}
+          className={`rounded-2xl border p-4 transition-all flex flex-col justify-between shadow-2xs ${
+            isLactateCritical || isGlucoseLow
+              ? "bg-rose-50/60 border-rose-200"
+              : isLactateElevated || isTempAbnormal
+              ? "bg-amber-50/60 border-amber-200"
+              : "bg-white border-slate-200/80"
+          }`}
+        >
           <div>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/70">
-              <div className="flex items-center space-x-1.5 text-slate-800">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
                 <Thermometer className="w-4 h-4 text-amber-600" />
-                <span className="text-xs font-bold uppercase tracking-wider">Infection & Labs</span>
+                <span>Metabolic & Labs</span>
               </div>
               {isLactateCritical ? (
-                <span className="text-[10px] font-bold uppercase bg-red-100 text-red-800 px-2 py-0.5 rounded border border-red-300">
-                  Critical Hyperlactatemia
+                <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200">
+                  Critical Lactate
                 </span>
               ) : isLactateElevated ? (
-                <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300">
-                  Elevated Lactate
-                </span>
-              ) : lactateVal === null ? (
-                <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-300">
-                  Lactate Missing
+                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                  Elevated
                 </span>
               ) : (
-                <span className="text-[10px] font-semibold uppercase bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                  Labs Recorded
+                <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                  Stable
                 </span>
               )}
             </div>
 
-            <div className="mt-3 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Serum Lactate:</span>
-                {lactateVal !== null ? (
-                  <span className={`font-mono font-bold ${isLactateCritical ? "text-red-700 text-sm" : isLactateElevated ? "text-amber-800" : "text-slate-900"}`}>
-                    {lactateVal} mmol/L {isLactateCritical && "(≥ 4.0 critical)"}
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Lab Pending / Missing</span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Blood Glucose:</span>
-                {glucoseVal !== null ? (
-                  <span className={`font-mono font-bold ${isGlucoseLow ? "text-red-700" : "text-slate-900"}`}>
-                    {glucoseVal} mmol/L {isGlucoseLow && "(< 3.3 hypoglycemia)"}
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Not Checked</span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">Core Temp:</span>
-                {tempVal !== null ? (
-                  <span className={`font-mono font-bold ${isTempAbnormal ? "text-amber-800" : "text-slate-900"}`}>
-                    {tempVal} °C
-                  </span>
-                ) : (
-                  <span className="text-amber-800 font-semibold italic">Unrecorded</span>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-slate-600">WBC Count:</span>
-                <span className="font-mono font-semibold text-slate-800">
-                  {labs.whiteBloodCellCount?.value ? `${labs.whiteBloodCellCount.value} ×10⁹/L` : "Pending"}
+            {/* Quick Metrics */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">Serum Lactate</span>
+                <span className={`text-lg font-black font-mono leading-tight ${isLactateCritical ? "text-rose-700" : isLactateElevated ? "text-amber-800" : "text-slate-900"}`}>
+                  {lactateVal !== null ? `${lactateVal}` : "--"} <span className="text-[10px] font-normal text-slate-500">mM</span>
                 </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">Crit ≥ 4.0</span>
+              </div>
+
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">Temperature</span>
+                <span className={`text-lg font-black font-mono leading-tight ${isTempAbnormal ? "text-amber-800" : "text-slate-900"}`}>
+                  {tempVal !== null ? `${tempVal}°C` : "--"}
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">Fever &gt; 38.5</span>
+              </div>
+
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">POC Glucose</span>
+                <span className={`text-base font-black font-mono leading-tight ${isGlucoseLow ? "text-rose-700" : "text-slate-900"}`}>
+                  {glucoseVal !== null ? `${glucoseVal}` : "--"} <span className="text-[10px] font-normal text-slate-500">mM</span>
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">Min 3.3 mM</span>
+              </div>
+
+              <div className="bg-white/80 p-2 rounded-xl border border-slate-100">
+                <span className="text-[10px] text-slate-500 font-medium block">WBC Count</span>
+                <span className="text-base font-black font-mono leading-tight text-slate-900">
+                  {labs.whiteBloodCellCount?.value ? `${labs.whiteBloodCellCount.value}` : "--"}
+                </span>
+                <span className="text-[9px] block text-slate-400 mt-0.5">×10⁹/L</span>
               </div>
             </div>
           </div>
 
           <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between">
-            <span className="text-[10px] text-slate-500 font-mono">Source: {patient.suspectedInfectionSource}</span>
+            <span className="text-[10px] text-slate-400 font-mono">Labs: Point-of-care</span>
             <button
-              onClick={() => onOpenWhySeeingThis("Metabolic & Sepsis Biomarker Criteria", { lactateVal, glucoseVal, tempVal })}
-              className="text-[11px] text-teal-800 hover:text-teal-900 font-semibold flex items-center gap-0.5 cursor-pointer"
+              onClick={() => onOpenWhySeeingThis("Metabolic & Biomarkers", { lactateVal, glucoseVal, tempVal })}
+              className="text-[11px] text-teal-800 hover:text-teal-900 font-bold flex items-center gap-0.5 cursor-pointer"
             >
-              Why this alert? <ChevronRight className="w-3 h-3" />
+              Details <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
