@@ -5,13 +5,16 @@ import {
   Timer,
   FileCheck,
   CheckCircle2,
-  Shield,
-  Stethoscope,
-  Sparkles
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 import { motion } from "motion/react";
 
-export const SolutionSection: React.FC = () => {
+interface SolutionSectionProps {
+  onOpenAssistant: (initialQuery?: string) => void;
+}
+
+export const SolutionSection: React.FC<SolutionSectionProps> = ({ onOpenAssistant }) => {
   const solutions = [
     {
       icon: Activity,
@@ -23,7 +26,8 @@ export const SolutionSection: React.FC = () => {
         "6 standard pediatric age group reference tables",
         "Prolonged capillary refill (>2s) detection",
         "Hypotension and narrow pulse pressure alarms"
-      ]
+      ],
+      aiQuery: "Explain how Chempions AI benchmarks age-normative heart rate and capillary refill in pediatric sepsis"
     },
     {
       icon: Lock,
@@ -35,7 +39,8 @@ export const SolutionSection: React.FC = () => {
         "Hard lock on automated mL/kg and mg/kg dosing",
         "Mandatory calibrated scale confirmation flag",
         "Eliminates accidental 10x drug calculation errors"
-      ]
+      ],
+      aiQuery: "How does the Bedside Scale Lock protect against weight-based pediatric dosing errors?"
     },
     {
       icon: Timer,
@@ -47,7 +52,8 @@ export const SolutionSection: React.FC = () => {
         "Blood cultures stat before antibiotic administration",
         "Antimicrobial infusion target within 60 minutes",
         "Weight-based crystalloid aliquots (10–20 mL/kg)"
-      ]
+      ],
+      aiQuery: "What are the 4 mandatory steps in the Surviving Sepsis Campaign 1-hour pediatric bundle?"
     },
     {
       icon: FileCheck,
@@ -59,7 +65,8 @@ export const SolutionSection: React.FC = () => {
         "Grounded in SSC 2026 and Phoenix Criteria (JAMA 2024)",
         "Audit-ready chronological event logging",
         "No opaque generative hallucinations at bedside"
-      ]
+      ],
+      aiQuery: "What clinical studies and guidelines validate the Chempions AI decision rules?"
     }
   ];
 
@@ -90,11 +97,11 @@ export const SolutionSection: React.FC = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: idx * 0.08 }}
-                className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-xs flex flex-col justify-between"
+                className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs flex flex-col justify-between hover:border-teal-300 transition-all group"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Icon className="w-6 h-6" />
                     </div>
                     <span className="text-[11px] font-bold text-teal-800 bg-teal-50/80 px-2.5 py-1 rounded-full border border-teal-200">
@@ -118,6 +125,20 @@ export const SolutionSection: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Direct Ask Chempions AI trigger on each card */}
+                <div className="pt-5 mt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => onOpenAssistant(item.aiQuery)}
+                    className="w-full py-2.5 px-3 bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-teal-900 rounded-xl text-xs font-bold flex items-center justify-between transition-colors border border-slate-200 hover:border-teal-300 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                      <span>Ask Chempions AI about this pillar</span>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-700 transition-colors" />
+                  </button>
                 </div>
               </motion.div>
             );

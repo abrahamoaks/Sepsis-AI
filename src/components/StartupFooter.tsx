@@ -48,8 +48,8 @@ export const StartupFooter: React.FC = () => {
                 </a>
               </li>
               <li>
-                <a href="#how-it-works" className="hover:text-white transition-colors">
-                  Interactive CDS Demo
+                <a href="#clinical-console" className="hover:text-white transition-colors">
+                  Bedside Intelligence
                 </a>
               </li>
               <li>
@@ -59,7 +59,7 @@ export const StartupFooter: React.FC = () => {
               </li>
               <li>
                 <a href="#faq" className="hover:text-white transition-colors">
-                  FAQ
+                  FAQ & EHR Standards
                 </a>
               </li>
             </ul>

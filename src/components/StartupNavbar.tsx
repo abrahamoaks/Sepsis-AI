@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { Activity, ShieldCheck, Sparkles, Menu, X, ArrowRight, HeartPulse } from "lucide-react";
+import { Sparkles, Menu, X, ArrowRight, HeartPulse, Mic, Activity } from "lucide-react";
 
 interface StartupNavbarProps {
-  onOpenDemo: () => void;
-  onOpenAssistant: () => void;
+  onOpenConsole: () => void;
+  onOpenAssistant: (initialQuery?: string) => void;
+  onStartVoice: () => void;
 }
 
 export const StartupNavbar: React.FC<StartupNavbarProps> = ({
-  onOpenDemo,
-  onOpenAssistant
+  onOpenConsole,
+  onOpenAssistant,
+  onStartVoice
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -39,13 +41,13 @@ export const StartupNavbar: React.FC<StartupNavbarProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 hidden sm:block">
-                Clinical Decision Support Platform
+                Clinical Intelligence & Voice Reasoning
               </p>
             </div>
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-7 text-xs font-bold text-slate-600">
+          <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-slate-600">
             <button
               onClick={() => scrollTo("problem")}
               className="hover:text-teal-700 transition-colors cursor-pointer"
@@ -59,10 +61,10 @@ export const StartupNavbar: React.FC<StartupNavbarProps> = ({
               What We Solve
             </button>
             <button
-              onClick={() => scrollTo("how-it-works")}
-              className="hover:text-teal-700 transition-colors cursor-pointer"
+              onClick={() => scrollTo("clinical-console")}
+              className="hover:text-teal-700 transition-colors cursor-pointer flex items-center gap-1"
             >
-              How It Works
+              <span>Bedside Intelligence</span>
             </button>
             <button
               onClick={() => scrollTo("evidence")}
@@ -74,43 +76,51 @@ export const StartupNavbar: React.FC<StartupNavbarProps> = ({
               onClick={() => scrollTo("faq")}
               className="hover:text-teal-700 transition-colors cursor-pointer"
             >
-              FAQ
+              FAQ & EHR
             </button>
           </nav>
 
-          {/* Desktop Call to Actions */}
+          {/* Desktop Call to Actions: Prominent Ask Chempions AI (Voice & Text) */}
           <div className="hidden sm:flex items-center gap-2.5">
             <button
-              onClick={onOpenAssistant}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1.5 transition-colors cursor-pointer"
+              onClick={onStartVoice}
+              className="px-3 py-2 rounded-xl text-xs font-bold text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200/80 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+              title="Voice Clinical Consultation"
             >
-              <Sparkles className="w-4 h-4 text-teal-600" />
-              <span>Ask AI Reasoner</span>
+              <Mic className="w-3.5 h-3.5 text-teal-700 animate-pulse" />
+              <span>Voice Consult</span>
             </button>
 
             <button
-              onClick={onOpenDemo}
-              className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all hover:shadow cursor-pointer"
+              onClick={() => onOpenAssistant()}
+              className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-all hover:shadow cursor-pointer"
             >
-              <span>Live CDS Sandbox</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-teal-200" />
+              <span>Ask Chempions AI</span>
             </button>
           </div>
 
-          {/* Mobile Hamburger Button */}
+          {/* Mobile Actions & Menu */}
           <div className="flex sm:hidden items-center gap-2">
             <button
-              onClick={onOpenDemo}
-              className="px-3 py-1.5 bg-teal-700 text-white rounded-lg text-xs font-bold cursor-pointer"
+              onClick={onStartVoice}
+              className="p-2 bg-teal-50 text-teal-800 rounded-lg border border-teal-200 cursor-pointer"
+              title="Voice Consult"
             >
-              Demo
+              <Mic className="w-4 h-4 text-teal-700" />
+            </button>
+            <button
+              onClick={() => onOpenAssistant()}
+              className="px-2.5 py-1.5 bg-teal-700 text-white rounded-lg text-xs font-bold cursor-pointer"
+            >
+              Ask AI
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-slate-900 rounded-lg cursor-pointer"
+              className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg cursor-pointer"
               aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -132,10 +142,10 @@ export const StartupNavbar: React.FC<StartupNavbarProps> = ({
             What We Solve
           </button>
           <button
-            onClick={() => scrollTo("how-it-works")}
+            onClick={() => scrollTo("clinical-console")}
             className="w-full text-left py-2 text-sm font-semibold text-slate-700 hover:text-teal-700 cursor-pointer"
           >
-            How It Works
+            Bedside Intelligence Console
           </button>
           <button
             onClick={() => scrollTo("evidence")}
@@ -147,28 +157,28 @@ export const StartupNavbar: React.FC<StartupNavbarProps> = ({
             onClick={() => scrollTo("faq")}
             className="w-full text-left py-2 text-sm font-semibold text-slate-700 hover:text-teal-700 cursor-pointer"
           >
-            FAQ
+            FAQ & EHR Integration
           </button>
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
-                onOpenAssistant();
+                onStartVoice();
               }}
-              className="w-full py-2.5 rounded-xl text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 rounded-xl text-xs font-bold text-teal-900 bg-teal-50 border border-teal-200 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-teal-600" />
-              <span>Ask AI Reasoner</span>
+              <Mic className="w-4 h-4 text-teal-700" />
+              <span>Voice Clinical Consult</span>
             </button>
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
-                onOpenDemo();
+                onOpenAssistant();
               }}
               className="w-full py-2.5 bg-teal-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <span>Explore Live CDS Sandbox</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Sparkles className="w-4 h-4 text-teal-200" />
+              <span>Open Chempions AI Clinical Assistant</span>
             </button>
           </div>
         </div>

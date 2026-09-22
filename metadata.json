@@ -1,6 +1,6 @@
 {
   "name": "Chempions AI",
-  "description": "Chempions AI — Pediatric Sepsis Clinical Intelligence Platform. Deterministic, age-normative vital surveillance, bedside scale-locked resuscitation dosing, and 1-hour golden window decision support.",
-  "requestFramePermissions": [],
+  "description": "Chempions AI — Pediatric Sepsis Clinical Intelligence Platform. Deterministic, age-normative vital surveillance, bedside scale-locked resuscitation dosing, voice-enabled clinical reasoning, and 1-hour golden window decision support.",
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
